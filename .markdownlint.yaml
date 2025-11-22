@@ -1,0 +1,13 @@
+# Fallback markdownlint configuration (for editors/IDEs)
+# This is a simpler config without custom rules for local editing
+
+default: true
+
+# Disable line length
+MD013: false
+
+# Allow inline HTML
+MD033: false
+
+# First line heading not required
+MD041: false
