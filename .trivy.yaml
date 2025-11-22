@@ -1,0 +1,79 @@
+# Trivy configuration file
+# Comprehensive security scanner configuration
+
+# Scan configuration
+scan:
+  # Skip directories and files
+  skip-dirs:
+    - .git
+    - node_modules
+    - .terraform
+    - .venv
+    - venv
+    - vendor
+    - dist
+    - build
+    - __pycache__
+    - .pytest_cache
+    - test-cases
+    - examples
+
+  # Skip files matching these patterns
+  skip-files:
+    - "*.md"
+    - "*.txt"
+
+# Security scanners to enable
+scanners:
+  - vuln          # Vulnerability scanner
+  - misconfig     # Misconfiguration scanner
+  - secret        # Secret scanner
+
+# Severity levels to report (CRITICAL, HIGH, MEDIUM, LOW, UNKNOWN)
+severity:
+  - CRITICAL
+  - HIGH
+  - MEDIUM
+
+# Output format (table, json, sarif, cyclonedx)
+format: table
+
+# Exit code configuration
+exit-code: 1  # Non-zero exit on vulnerabilities found
+
+# Vulnerability database
+db:
+  skip-update: false  # Auto-update vulnerability database
+
+# Secret scanner configuration
+secret:
+  # Secret types to detect
+  config: builtin
+
+# Misconfiguration scanner
+misconfig:
+  # Include built-in checks
+  include-deprecated-checks: false
+
+  # Terraform-specific settings
+  terraform:
+    # Scan Terraform modules
+    enabled: true
+
+  # CloudFormation-specific settings
+  cloudformation:
+    enabled: true
+
+  # Dockerfile-specific settings
+  dockerfile:
+    enabled: true
+
+  # Kubernetes-specific settings
+  kubernetes:
+    enabled: true
+
+# Ignore unfixed vulnerabilities (optional)
+# ignore-unfixed: true
+
+# Timeout for scanning
+timeout: 5m

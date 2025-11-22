@@ -1,0 +1,33 @@
+# Test case for Trivy - intentionally insecure Dockerfile
+# This file should trigger multiple Trivy security checks
+
+# DS002: Using an outdated base image
+FROM ubuntu:18.04
+
+# DS026: Not pinning package versions
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git
+
+# DS001: Using latest tag (bad practice)
+FROM node:latest
+
+# DS002: Running as root user (security issue)
+WORKDIR /app
+
+# DS014: Not using COPY with specific source
+ADD https://example.com/file.tar.gz /tmp/
+
+# Copying everything without .dockerignore
+COPY . .
+
+# DS026: Not pinning npm package versions
+RUN npm install
+
+# Exposing unnecessary ports
+EXPOSE 22
+EXPOSE 3389
+
+# DS012: Running container as root
+CMD ["npm", "start"]

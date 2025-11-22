@@ -1,0 +1,70 @@
+# Example Trufflehog configuration file
+# Copy this to .trufflehog.yaml in your repository root to customize Trufflehog behavior
+
+# Paths to exclude from scanning
+exclude_paths:
+  - .git/
+  - node_modules/
+  - .terraform/
+  - .venv/
+  - venv/
+  - vendor/
+  - dist/
+  - build/
+  - test/
+  - tests/
+  - "*.lock"
+  - "*.sum"
+  - go.sum
+  - package-lock.json
+  - yarn.lock
+  - pnpm-lock.yaml
+  - Pipfile.lock
+  - poetry.lock
+
+# Patterns to exclude (regex)
+exclude_patterns:
+  # Test and example patterns
+  - "EXAMPLE"
+  - "example\\.com"
+  - "test.*key"
+  - "test.*secret"
+  - "dummy.*key"
+  - "dummy.*secret"
+  - "fake.*token"
+  - "sample.*password"
+
+  # Common false positives
+  - "localhost"
+  - "127\\.0\\.0\\.1"
+  - "0\\.0\\.0\\.0"
+  - "192\\.168\\."
+  - "10\\.0\\."
+
+  # Development/staging indicators
+  - "dev.*key"
+  - "staging.*key"
+
+# Entropy settings (higher = more strict, fewer false positives)
+entropy:
+  # Minimum entropy for hex strings (default: 3.0, recommended: 3.0-4.0)
+  min_entropy_hex: 3.0
+
+  # Minimum entropy for base64 strings (default: 4.5, recommended: 4.5-5.0)
+  min_entropy_base64: 4.5
+
+# Maximum depth for directory traversal
+max_depth: 50
+
+# Include these file patterns for scanning (optional)
+# include_patterns:
+#   - ".*\\.env.*"
+#   - ".*\\.key"
+#   - ".*\\.pem"
+#   - ".*config.*"
+#   - ".*secret.*"
+
+# Output configuration
+output:
+  json: false      # Set to true for JSON output
+  verbose: false   # Set to true for verbose output

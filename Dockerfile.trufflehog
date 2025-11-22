@@ -1,0 +1,19 @@
+# Dockerfile for Trufflehog - Secrets scanner
+# Finds secrets accidentally committed to repositories
+
+FROM python:3.11-alpine
+
+# Install git (required for Trufflehog to work)
+RUN apk add --no-cache git
+
+# Install trufflehog with pinned version for reproducibility
+RUN pip install --no-cache-dir truffleHog==2.2.1
+
+# Copy default configuration to container
+COPY .trufflehog.yaml /root/.trufflehog.yaml
+
+# Set working directory to workspace for volume mounting
+WORKDIR /workspace
+
+# Default command shows help info
+CMD ["trufflehog", "--help"]

@@ -1,0 +1,77 @@
+# Example Trivy configuration file
+# Copy this to .trivy.yaml in your repository root to customize Trivy behavior
+
+# Scan configuration
+scan:
+  # Skip directories
+  skip-dirs:
+    - .git
+    - node_modules
+    - .terraform
+    - .venv
+    - venv
+    - vendor
+    - dist
+    - build
+
+  # Skip files matching these patterns
+  skip-files:
+    - "*.md"
+    - "*.txt"
+    - "LICENSE"
+
+# Security scanners to enable
+scanners:
+  - vuln          # Vulnerability scanner
+  - misconfig     # Misconfiguration scanner
+  - secret        # Secret scanner
+  # - license     # License scanner (optional)
+
+# Severity levels to report
+severity:
+  - CRITICAL
+  - HIGH
+  - MEDIUM
+  # - LOW       # Uncomment to include LOW severity
+
+# Output format (table, json, sarif, cyclonedx)
+format: table
+
+# Exit code (0 = no failures, 1 = failures found)
+exit-code: 1
+
+# Ignore unfixed vulnerabilities (optional)
+# ignore-unfixed: true
+
+# Vulnerability database
+db:
+  skip-update: false  # Auto-update vulnerability database
+
+# Secret scanner configuration
+secret:
+  config: builtin
+
+# Misconfiguration scanner
+misconfig:
+  include-deprecated-checks: false
+
+  terraform:
+    enabled: true
+
+  cloudformation:
+    enabled: true
+
+  dockerfile:
+    enabled: true
+
+  kubernetes:
+    enabled: true
+
+# Timeout for scanning
+timeout: 5m
+
+# Ignore specific CVEs (example)
+# vulnerability:
+#   ignore:
+#     - CVE-2022-1234
+#     - CVE-2023-5678

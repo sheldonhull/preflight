@@ -1,0 +1,58 @@
+# Trufflehog configuration file
+# Secrets scanner configuration
+
+# Paths to exclude from scanning
+exclude_paths:
+  - .git/
+  - node_modules/
+  - .terraform/
+  - .venv/
+  - venv/
+  - vendor/
+  - dist/
+  - build/
+  - __pycache__/
+  - .pytest_cache/
+  - test-cases/
+  - examples/
+  - "*.lock"
+  - "*.sum"
+  - go.sum
+  - package-lock.json
+  - yarn.lock
+  - pnpm-lock.yaml
+  - Pipfile.lock
+  - poetry.lock
+
+# Patterns to exclude (regex)
+exclude_patterns:
+  # Example patterns - add more as needed
+  - "EXAMPLE"
+  - "example\\.com"
+  - "localhost"
+  - "127\\.0\\.0\\.1"
+  - "0\\.0\\.0\\.0"
+  - "test.*key"
+  - "dummy.*secret"
+  - "fake.*token"
+
+# Entropy settings
+entropy:
+  # Minimum entropy for hex strings (default: 3.0)
+  min_entropy_hex: 3.0
+  # Minimum entropy for base64 strings (default: 4.5)
+  min_entropy_base64: 4.5
+
+# Maximum depth for scanning
+max_depth: 50
+
+# Include these patterns for scanning
+# include_patterns:
+#   - ".*\\.env.*"
+#   - ".*\\.key"
+#   - ".*\\.pem"
+
+# Output configuration
+output:
+  json: false
+  verbose: false

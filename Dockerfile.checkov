@@ -1,0 +1,16 @@
+# Dockerfile for Checkov - Infrastructure as Code security scanner
+# Scans IaC files for security and compliance issues
+
+FROM python:3.11-alpine
+
+# Install checkov with pinned version for reproducibility
+RUN pip install --no-cache-dir checkov==3.2.9
+
+# Copy default configuration to container
+COPY .checkov.yaml /root/.checkov.yaml
+
+# Set working directory to workspace for volume mounting
+WORKDIR /workspace
+
+# Default command shows version info
+CMD ["checkov", "--version"]
