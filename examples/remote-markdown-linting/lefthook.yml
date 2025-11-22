@@ -8,7 +8,7 @@
 # and run `lefthook install`.
 
 remotes:
-  - git_url: https://github.com/YOUR_ORG/lefthook
+  - git_url: https://github.com/sheldonhull/preflight
     ref: main  # or use a specific version tag like v1.0.0
 
 # That's it! The remote configuration will provide:

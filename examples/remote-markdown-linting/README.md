@@ -5,8 +5,7 @@ This example demonstrates how to use the remote markdown linting configuration i
 ## Setup
 
 1. Copy the `lefthook.yml` file to your repository's root directory
-2. Update `YOUR_ORG` in the `git_url` to match your organization
-3. Run `lefthook install`
+2. Run `lefthook install`
 
 ## What Gets Configured
 
@@ -59,7 +58,7 @@ If you need to override or extend the configuration, you can add commands direct
 
 ```yaml
 remotes:
-  - git_url: https://github.com/YOUR_ORG/lefthook
+  - git_url: https://github.com/sheldonhull/preflight
     ref: main
 
 # Override or extend with local configuration

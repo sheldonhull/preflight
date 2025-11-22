@@ -16,7 +16,7 @@
 install:
   commands:
     pull-markdownlint-image:
-      run: docker pull lefthook/markdownlint-cli2:latest || echo "Warning: Could not pull image. Please build locally with ./build-markdownlint-image.sh"
+      run: docker pull lefthook/markdownlint-cli2:latest || echo "Warning: Could not pull image. Please build it locally or contact repository maintainer."
 
 # Pre-commit hook - automatically fix markdown issues
 pre-commit:

@@ -4,6 +4,8 @@
 FROM node:20-alpine
 
 # Install markdownlint-cli2 and the sentences-per-line custom rule
+# Versions are pinned for reproducibility and security
+# Update regularly: check npm for latest versions and security patches
 RUN npm install -g \
     markdownlint-cli2@0.15.0 \
     sentences-per-line@0.3.0

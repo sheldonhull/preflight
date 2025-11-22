@@ -8,7 +8,7 @@ Add this to your repository's `lefthook.yml`:
 
 ```yaml
 remotes:
-  - git_url: https://github.com/YOUR_ORG/lefthook
+  - git_url: https://github.com/sheldonhull/preflight
     ref: main
 ```
 
@@ -182,7 +182,7 @@ For production stability, pin to a specific release:
 
 ```yaml
 remotes:
-  - git_url: https://github.com/YOUR_ORG/lefthook
+  - git_url: https://github.com/sheldonhull/preflight
     ref: v1.0.0  # Use a specific tag
 ```
 
@@ -192,7 +192,7 @@ You can add more hooks while keeping the remote markdown linting:
 
 ```yaml
 remotes:
-  - git_url: https://github.com/YOUR_ORG/lefthook
+  - git_url: https://github.com/sheldonhull/preflight
     ref: main
 
 # Add your own hooks
@@ -212,7 +212,7 @@ You can use multiple remote configs:
 
 ```yaml
 remotes:
-  - git_url: https://github.com/YOUR_ORG/lefthook
+  - git_url: https://github.com/sheldonhull/preflight
     ref: main  # Markdown linting
 
   - git_url: https://github.com/YOUR_ORG/security-hooks

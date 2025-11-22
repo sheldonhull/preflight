@@ -22,7 +22,7 @@ In your repository, create or update `lefthook.yml`:
 
 # Pull markdown linting configuration from this repo
 remotes:
-  - git_url: https://github.com/YOUR_ORG/lefthook
+  - git_url: https://github.com/sheldonhull/preflight
     ref: main  # or use a specific tag like v1.0.0 for stability
 ```
 
@@ -69,13 +69,13 @@ For other repositories to use this without building, publish the image to a regi
 echo $GITHUB_TOKEN | docker login ghcr.io -u YOUR_USERNAME --password-stdin
 
 # Tag the image
-docker tag lefthook/markdownlint-cli2:latest ghcr.io/YOUR_ORG/markdownlint-cli2:latest
+docker tag lefthook/markdownlint-cli2:latest ghcr.io/sheldonhull/markdownlint-cli2:latest
 
 # Push to registry
-docker push ghcr.io/YOUR_ORG/markdownlint-cli2:latest
+docker push ghcr.io/sheldonhull/markdownlint-cli2:latest
 ```
 
-Then update `lefthook-markdown.yml` to reference `ghcr.io/YOUR_ORG/markdownlint-cli2:latest` instead of `lefthook/markdownlint-cli2:latest`.
+Then update `lefthook-markdown.yml` to reference `ghcr.io/sheldonhull/markdownlint-cli2:latest` instead of `lefthook/markdownlint-cli2:latest`.
 
 #### Docker Hub
 
@@ -200,7 +200,7 @@ If you see "docker: image not found", build or pull the image:
 ./build-markdownlint-image.sh
 
 # Or if published to a registry
-docker pull ghcr.io/YOUR_ORG/markdownlint-cli2:latest
+docker pull ghcr.io/sheldonhull/markdownlint-cli2:latest
 ```
 
 ### Lefthook not running hooks
@@ -281,7 +281,7 @@ For production use, pin to specific versions:
 # lefthook.yml
 
 remotes:
-  - git_url: https://github.com/YOUR_ORG/lefthook
+  - git_url: https://github.com/sheldonhull/preflight
     ref: v1.2.3  # Pin to specific tag
 ```
 
