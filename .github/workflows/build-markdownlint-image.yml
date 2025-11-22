@@ -1,17 +1,8 @@
 name: Build and Publish Markdownlint Docker Image
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'Dockerfile.markdownlint'
-      - '.markdownlint-cli2.yaml'
-      - '.github/workflows/build-markdownlint-image.yml'
-  pull_request:
-    paths:
-      - 'Dockerfile.markdownlint'
-      - '.markdownlint-cli2.yaml'
+  release:
+    types: [created, published]
   workflow_dispatch:
     inputs:
       publish:
@@ -39,7 +30,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Container Registry
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'release' || github.event.inputs.publish == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -52,11 +43,10 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
 
       - name: Build Docker image
         uses: docker/build-push-action@v5
@@ -72,16 +62,19 @@ jobs:
 
       - name: Test Docker image
         run: |
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest markdownlint-cli2 --version
+          # Get the first tag from the metadata output
+          IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
+          echo "Testing image: $IMAGE_TAG"
+          docker run --rm "$IMAGE_TAG" markdownlint-cli2 --version
           echo "Testing with a sample markdown file..."
           echo "# Test" > /tmp/test.md
           echo "This is a test. Another sentence." >> /tmp/test.md
           docker run --rm -v /tmp:/workspace -w /workspace \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            "$IMAGE_TAG" \
             markdownlint-cli2 test.md || echo "Linting completed (errors expected for test)"
 
       - name: Push Docker image
-        if: github.event_name != 'pull_request' && (github.event_name == 'push' || github.event.inputs.publish == 'true')
+        if: github.event_name == 'release' || github.event.inputs.publish == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
