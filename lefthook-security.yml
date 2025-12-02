@@ -1,0 +1,104 @@
+# Remote Lefthook Configuration for Security Scanning
+#
+# This configuration provides Docker-based security scanning with:
+# - Checkov: Infrastructure as Code security scanner
+# - Trivy: Comprehensive vulnerability and misconfiguration scanner
+# - Trufflehog: Secrets scanner
+#
+# Usage in other repositories:
+#   Add to your lefthook.yml:
+#
+#   remotes:
+#     - git_url: https://github.com/sheldonhull/preflight
+#       ref: main  # or specific tag/branch
+#       configs:
+#         - lefthook-security.yml
+#
+# The Docker images will be automatically pulled during lefthook install.
+
+# Install hook - pulls the Docker images so they're ready when hooks run
+install:
+  commands:
+    pull-checkov-image:
+      run: docker pull ghcr.io/sheldonhull/lefthook/checkov:latest || echo "Warning: Could not pull checkov image. Please build it locally or contact repository maintainer."
+    pull-trivy-image:
+      run: docker pull ghcr.io/sheldonhull/lefthook/trivy:latest || echo "Warning: Could not pull trivy image. Please build it locally or contact repository maintainer."
+    pull-trufflehog-image:
+      run: docker pull ghcr.io/sheldonhull/lefthook/trufflehog:latest || echo "Warning: Could not pull trufflehog image. Please build it locally or contact repository maintainer."
+
+# Pre-commit hook - scan for issues before committing
+pre-commit:
+  commands:
+    checkov-scan:
+      # Scan Infrastructure as Code files
+      glob: "*.{tf,yml,yaml,json,dockerfile,Dockerfile}"
+      run: |
+        docker run --rm \
+          -v "$(pwd):/workspace" \
+          -w /workspace \
+          ghcr.io/sheldonhull/lefthook/checkov:latest \
+          checkov --directory /workspace --config-file /root/.checkov.yaml
+      skip:
+        - merge
+        - rebase
+
+    trivy-fs-scan:
+      # Scan filesystem for vulnerabilities and misconfigurations
+      run: |
+        docker run --rm \
+          -v "$(pwd):/workspace" \
+          -w /workspace \
+          ghcr.io/sheldonhull/lefthook/trivy:latest \
+          trivy fs --config /root/.trivy.yaml --exit-code 0 .
+      skip:
+        - merge
+        - rebase
+
+    trufflehog-scan:
+      # Scan for secrets in git history and staged files
+      run: |
+        docker run --rm \
+          -v "$(pwd):/workspace" \
+          -v "$(pwd)/.git:/workspace/.git" \
+          -w /workspace \
+          ghcr.io/sheldonhull/lefthook/trufflehog:latest \
+          trufflehog --regex --entropy=True --max_depth=50 \
+          --exclude_paths /root/.trufflehog.yaml \
+          /workspace
+      skip:
+        - merge
+        - rebase
+
+# Pre-push hook - final security validation before pushing
+pre-push:
+  commands:
+    checkov-validate:
+      # Strict validation for IaC files
+      glob: "*.{tf,yml,yaml,json,dockerfile,Dockerfile}"
+      run: |
+        docker run --rm \
+          -v "$(pwd):/workspace" \
+          -w /workspace \
+          ghcr.io/sheldonhull/lefthook/checkov:latest \
+          checkov --directory /workspace --config-file /root/.checkov.yaml
+
+    trivy-full-scan:
+      # Comprehensive security scan with strict exit code
+      run: |
+        docker run --rm \
+          -v "$(pwd):/workspace" \
+          -w /workspace \
+          ghcr.io/sheldonhull/lefthook/trivy:latest \
+          trivy fs --config /root/.trivy.yaml .
+
+    trufflehog-validate:
+      # Strict secrets validation
+      run: |
+        docker run --rm \
+          -v "$(pwd):/workspace" \
+          -v "$(pwd)/.git:/workspace/.git" \
+          -w /workspace \
+          ghcr.io/sheldonhull/lefthook/trufflehog:latest \
+          trufflehog --regex --entropy=True --max_depth=50 \
+          --exclude_paths /root/.trufflehog.yaml \
+          /workspace

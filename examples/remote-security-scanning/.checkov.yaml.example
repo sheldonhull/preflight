@@ -1,0 +1,43 @@
+# Example Checkov configuration file
+# Copy this to .checkov.yaml in your repository root to customize Checkov behavior
+
+# Directories and files to skip
+skip-path:
+  - .git
+  - node_modules
+  - .terraform
+  - .venv
+  - venv
+  - vendor
+  - dist
+  - build
+
+# Skip specific checks (add check IDs that are not relevant to your project)
+skip-check:
+  # Example: Skip checks that don't apply to your infrastructure
+  # - CKV_AWS_1   # Ensure S3 bucket has access logging enabled
+  # - CKV_AWS_2   # Ensure S3 bucket has versioning enabled
+
+# Frameworks to scan
+framework:
+  - terraform
+  - cloudformation
+  - kubernetes
+  - dockerfile
+  - github_actions
+
+# Output format
+output: cli
+compact: true
+no-color: false
+
+# Soft fail mode (don't block commits, just warn)
+# soft-fail: true
+
+# Summary position
+summary-position: bottom
+
+# Check severity (CRITICAL, HIGH, MEDIUM, LOW)
+# check-severity:
+#   - CRITICAL
+#   - HIGH

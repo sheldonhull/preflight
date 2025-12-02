@@ -1,0 +1,20 @@
+# Example lefthook.yml for consuming the remote security scanning configuration
+# This is all you need in your repository to enable security scanning!
+
+remotes:
+  - git_url: https://github.com/sheldonhull/preflight
+    ref: main  # or use a specific tag for stability (recommended for production)
+    configs:
+      - lefthook-security.yml
+
+# Optional: Add your own custom hooks here
+# pre-commit:
+#   commands:
+#     your-custom-check:
+#       run: echo "Running custom checks..."
+
+# Optional: Override specific scanner behavior
+# pre-commit:
+#   commands:
+#     checkov-scan:
+#       skip: true  # Disable Checkov if not needed

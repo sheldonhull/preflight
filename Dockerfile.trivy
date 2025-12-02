@@ -1,0 +1,13 @@
+# Dockerfile for Trivy - Comprehensive security scanner
+# Scans for vulnerabilities, misconfigurations, secrets, and more
+
+FROM aquasec/trivy:0.55.2
+
+# Copy default configuration to container
+COPY .trivy.yaml /root/.trivy.yaml
+
+# Set working directory to workspace for volume mounting
+WORKDIR /workspace
+
+# Default command shows version info
+CMD ["trivy", "--version"]

@@ -1,0 +1,46 @@
+# Checkov configuration file
+# Infrastructure as Code security scanner configuration
+
+# Directories and files to skip
+skip-path:
+  - .git
+  - node_modules
+  - .terraform
+  - .venv
+  - venv
+  - vendor
+  - dist
+  - build
+  - __pycache__
+  - .pytest_cache
+  - test-cases
+  - examples
+
+# Framework-specific settings
+framework:
+  - terraform
+  - cloudformation
+  - kubernetes
+  - dockerfile
+  - github_actions
+  - gitlab_ci
+  - helm
+
+# Output format (cli, json, junitxml, github_failed_only, sarif)
+output: cli
+
+# Suppress specific checks (add check IDs here if needed)
+# skip-check:
+#   - CKV_AWS_1
+
+# Enable compact output for cleaner logs
+compact: true
+
+# Enable color output
+no-color: false
+
+# Download external modules for Terraform
+download-external-modules: false
+
+# Show summary of results
+summary-position: bottom
