@@ -1,0 +1,50 @@
+# Prek Configuration for Preflight
+#
+# This is the main prek configuration file that imports remote configurations
+# for markdown linting and security scanning.
+#
+# Usage:
+#   prek install     # Install git hooks
+#   prek run         # Run all hooks manually
+#   prek run fmt     # Run formatting hooks
+#   prek run lint    # Run linting hooks
+#   prek run security # Run security scanning hooks
+#
+# For more information: https://github.com/prek-dev/prek
+
+[settings]
+# Detect TTY for VS Code and other non-interactive environments
+# When no TTY is detected, suppress colorful output and reduce verbosity
+# to prevent issues with VS Code's Git integration
+colors = "auto"
+verbose = false
+parallel = true
+
+# Environment variable to completely skip hooks (useful for emergency commits)
+# Set PREK_SKIP=1 to bypass all hooks
+skip_env = "PREK_SKIP"
+
+[settings.tty]
+# TTY detection settings for VS Code compatibility
+# When running in non-TTY mode (like VS Code commits), stderr is suppressed
+# to prevent VS Code from treating hook output as errors
+detect = true
+suppress_stderr_when_no_tty = true
+quiet_when_no_tty = true
+
+# Import remote configurations
+[remotes]
+
+[remotes.markdown]
+# Markdown linting with Docker-based markdownlint-cli2
+# Provides auto-fix on commit and validation on push
+url = "https://github.com/sheldonhull/preflight"
+ref = "main"
+config = "prek-markdown.toml"
+
+[remotes.security]
+# Security scanning with Checkov, Trivy, and Trufflehog
+# Scans for IaC issues, vulnerabilities, and secrets
+url = "https://github.com/sheldonhull/preflight"
+ref = "main"
+config = "prek-security.toml"

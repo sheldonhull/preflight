@@ -44,19 +44,20 @@ cp before-formatting.md test-output.md
 docker run --rm \
   -v "$(pwd):/workspace" \
   -w /workspace \
-  lefthook/markdownlint-cli2:latest \
+  preflight/markdownlint-cli2:latest \
   markdownlint-cli2 --fix test-output.md
 
 # Compare results
 diff test-output.md expected-after-formatting.md
 ```
 
-### With Lefthook
+### With Prek
 
 ```bash
 # From repository root
-lefthook run pre-commit
+prek run pre-commit
 # This will format all markdown files including test cases
+# Fixed files are automatically staged!
 ```
 
 ## Expected Behavior
@@ -64,12 +65,14 @@ lefthook run pre-commit
 After running the formatter on `before-formatting.md`:
 
 1. Sentences like "This is one. This is two." become:
+
    ```markdown
    This is one.
    This is two.
    ```
 
 2. Tables remain formatted:
+
    ```markdown
    | Col1 | Col2 |
    |------|------|
@@ -77,6 +80,7 @@ After running the formatter on `before-formatting.md`:
    ```
 
 3. Code blocks are unchanged:
+
    ````markdown
    ```bash
    echo "Multiple. Sentences. Here."
@@ -91,3 +95,11 @@ If tests fail:
 2. Verify the config file exists: `.markdownlint-cli2.yaml` in the repo root
 3. Check for conflicting config files in your home directory
 4. Run with verbose output: `markdownlint-cli2 --fix test-output.md --verbose`
+
+## VS Code Compatibility
+
+When running prek hooks from VS Code (non-interactive mode):
+
+- Stderr is suppressed to prevent VS Code from treating hook output as errors
+- Fixed files are automatically staged so you don't need an extra step
+- Set `PREK_SKIP=1` to bypass hooks if needed

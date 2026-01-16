@@ -1,6 +1,6 @@
 #!/bin/bash
 # Test script for security scanner setup
-# This simulates what the lefthook hooks would do
+# This simulates what the prek hooks would do
 
 set -e
 
@@ -9,7 +9,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-REGISTRY="ghcr.io/sheldonhull/lefthook"
+REGISTRY="ghcr.io/sheldonhull/preflight"
 CHECKOV_IMAGE="${REGISTRY}/checkov:latest"
 TRIVY_IMAGE="${REGISTRY}/trivy:latest"
 TRUFFLEHOG_IMAGE="${REGISTRY}/trufflehog:latest"
@@ -57,7 +57,7 @@ check_and_build_image "$TRUFFLEHOG_IMAGE" "trufflehog" "Dockerfile.trufflehog"
 # Check if configuration files exist
 echo ""
 echo "Checking configuration files..."
-for file in ".checkov.yaml" ".trivy.yaml" ".trufflehog.yaml" "lefthook-security.yml" \
+for file in ".checkov.yaml" ".trivy.yaml" ".trufflehog.yaml" "prek-security.toml" \
             "Dockerfile.checkov" "Dockerfile.trivy" "Dockerfile.trufflehog"; do
     if [ -f "$file" ]; then
         echo -e "${GREEN}✓ $file exists${NC}"
@@ -209,37 +209,52 @@ else
     echo -e "${YELLOW}! Repository has some Trivy findings${NC}"
 fi
 
-# Test lefthook configuration
+# Test TTY detection
 echo ""
 echo "========================================="
-echo "Testing Lefthook Configuration"
+echo "Testing TTY Detection (VS Code compatibility)"
 echo "========================================="
 echo ""
 
-if ! command -v lefthook &> /dev/null; then
-    echo -e "${YELLOW}! Lefthook is not installed${NC}"
-    echo "To test the full setup, install lefthook:"
-    echo "  brew install lefthook"
-    echo "  or: go install github.com/evilmartians/lefthook@latest"
+echo "Current TTY status:"
+if [ -t 1 ]; then
+    echo -e "${GREEN}✓ Running in interactive mode (TTY detected)${NC}"
 else
-    echo -e "${GREEN}✓ Lefthook is available${NC}"
+    echo -e "${YELLOW}! Running in non-interactive mode (no TTY)${NC}"
+    echo "  Prek will suppress stderr output to prevent VS Code issues"
+fi
+
+# Test prek configuration
+echo ""
+echo "========================================="
+echo "Testing Prek Configuration"
+echo "========================================="
+echo ""
+
+if ! command -v prek &> /dev/null; then
+    echo -e "${YELLOW}! Prek is not installed${NC}"
+    echo "To test the full setup, install prek:"
+    echo "  cargo install prek"
+    echo "  or: brew install prek"
+else
+    echo -e "${GREEN}✓ Prek is available${NC}"
 
     echo ""
-    echo "Testing lefthook configuration syntax..."
-    if lefthook run --help > /dev/null 2>&1; then
-        echo -e "${GREEN}✓ Lefthook is working${NC}"
+    echo "Testing prek configuration syntax..."
+    if prek --help > /dev/null 2>&1; then
+        echo -e "${GREEN}✓ Prek is working${NC}"
     else
-        echo -e "${RED}✗ Lefthook test failed${NC}"
+        echo -e "${RED}✗ Prek test failed${NC}"
     fi
 
-    # Only test runs if lefthook.yml exists
-    if [ -f "lefthook.yml" ]; then
+    # Only test runs if prek.toml exists
+    if [ -f "prek.toml" ]; then
         echo ""
         echo "You can test the hooks manually with:"
-        echo "  lefthook install          # Install hooks"
-        echo "  lefthook run install      # Pull Docker images"
-        echo "  lefthook run pre-commit   # Test security scanning"
-        echo "  lefthook run pre-push     # Test security validation"
+        echo "  prek install          # Install hooks"
+        echo "  prek run install      # Pull Docker images"
+        echo "  prek run pre-commit   # Test security scanning"
+        echo "  prek run pre-push     # Test security validation"
     fi
 fi
 
@@ -251,9 +266,14 @@ echo ""
 echo "Next steps:"
 echo "1. Review the configuration files"
 echo "2. Build and publish the Docker images to a registry"
-echo "3. Update lefthook-security.yml with your registry URL if needed"
+echo "3. Update prek-security.toml with your registry URL if needed"
 echo "4. Test in another repository with the remote config"
 echo "5. Customize security policies in .checkov.yaml, .trivy.yaml, and .trufflehog.yaml"
+echo ""
+echo "Key features of the prek configuration:"
+echo "  - TTY detection for VS Code compatibility"
+echo "  - Suppresses stderr in non-interactive mode"
+echo "  - Parallel execution of security scanners"
 echo ""
 
 # Cleanup

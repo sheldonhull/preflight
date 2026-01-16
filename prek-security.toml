@@ -1,0 +1,226 @@
+# Remote Prek Configuration for Security Scanning
+#
+# This configuration provides Docker-based security scanning with:
+# - Checkov: Infrastructure as Code security scanner
+# - Trivy: Comprehensive vulnerability and misconfiguration scanner
+# - Trufflehog: Secrets scanner
+#
+# Usage in other repositories:
+#   Add to your prek.toml:
+#
+#   [remotes.security]
+#   url = "https://github.com/sheldonhull/preflight"
+#   ref = "main"
+#   config = "prek-security.toml"
+#
+# The Docker images will be automatically pulled during prek install.
+
+[settings]
+# TTY detection for VS Code compatibility
+[settings.tty]
+detect = true
+suppress_stderr_when_no_tty = true
+quiet_when_no_tty = true
+
+# Install hook - pulls the Docker images so they're ready when hooks run
+[hooks.install]
+name = "Install Security Scanner Images"
+parallel = true
+
+[hooks.install.commands.pull-checkov-image]
+name = "Pull Checkov Docker image"
+run = '''
+if [ -t 1 ]; then
+  docker pull ghcr.io/sheldonhull/preflight/checkov:latest
+else
+  docker pull ghcr.io/sheldonhull/preflight/checkov:latest 2>/dev/null || true
+fi
+'''
+interactive = false
+
+[hooks.install.commands.pull-trivy-image]
+name = "Pull Trivy Docker image"
+run = '''
+if [ -t 1 ]; then
+  docker pull ghcr.io/sheldonhull/preflight/trivy:latest
+else
+  docker pull ghcr.io/sheldonhull/preflight/trivy:latest 2>/dev/null || true
+fi
+'''
+interactive = false
+
+[hooks.install.commands.pull-trufflehog-image]
+name = "Pull Trufflehog Docker image"
+run = '''
+if [ -t 1 ]; then
+  docker pull ghcr.io/sheldonhull/preflight/trufflehog:latest
+else
+  docker pull ghcr.io/sheldonhull/preflight/trufflehog:latest 2>/dev/null || true
+fi
+'''
+interactive = false
+
+# Pre-commit hook - scan for issues before committing
+[hooks.pre-commit]
+name = "Security Scanning"
+parallel = true
+
+[hooks.pre-commit.commands.checkov-scan]
+name = "Checkov IaC scan"
+glob = "*.{tf,yml,yaml,json,dockerfile,Dockerfile}"
+skip = ["merge", "rebase"]
+run = '''
+#!/bin/bash
+set -e
+
+# TTY detection for VS Code compatibility
+if [ -t 1 ]; then
+  # Interactive mode - show full output
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -w /workspace \
+    ghcr.io/sheldonhull/preflight/checkov:latest \
+    checkov --directory /workspace --config-file /root/.checkov.yaml
+else
+  # Non-interactive mode - suppress stderr for VS Code
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -w /workspace \
+    ghcr.io/sheldonhull/preflight/checkov:latest \
+    checkov --directory /workspace --config-file /root/.checkov.yaml 2>/dev/null || exit 0
+fi
+'''
+
+[hooks.pre-commit.commands.trivy-fs-scan]
+name = "Trivy filesystem scan"
+skip = ["merge", "rebase"]
+run = '''
+#!/bin/bash
+set -e
+
+# TTY detection for VS Code compatibility
+if [ -t 1 ]; then
+  # Interactive mode - show full output
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -w /workspace \
+    ghcr.io/sheldonhull/preflight/trivy:latest \
+    trivy fs --config /root/.trivy.yaml --exit-code 0 .
+else
+  # Non-interactive mode - suppress stderr for VS Code
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -w /workspace \
+    ghcr.io/sheldonhull/preflight/trivy:latest \
+    trivy fs --config /root/.trivy.yaml --exit-code 0 . 2>/dev/null || exit 0
+fi
+'''
+
+[hooks.pre-commit.commands.trufflehog-scan]
+name = "Trufflehog secrets scan"
+skip = ["merge", "rebase"]
+run = '''
+#!/bin/bash
+set -e
+
+# TTY detection for VS Code compatibility
+if [ -t 1 ]; then
+  # Interactive mode - show full output
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -v "$(pwd)/.git:/workspace/.git" \
+    -w /workspace \
+    ghcr.io/sheldonhull/preflight/trufflehog:latest \
+    trufflehog --regex --entropy=True --max_depth=50 \
+    --exclude_paths /root/.trufflehog.yaml \
+    /workspace
+else
+  # Non-interactive mode - suppress stderr for VS Code
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -v "$(pwd)/.git:/workspace/.git" \
+    -w /workspace \
+    ghcr.io/sheldonhull/preflight/trufflehog:latest \
+    trufflehog --regex --entropy=True --max_depth=50 \
+    --exclude_paths /root/.trufflehog.yaml \
+    /workspace 2>/dev/null || exit 0
+fi
+'''
+
+# Pre-push hook - final security validation before pushing
+[hooks.pre-push]
+name = "Security Validation"
+parallel = true
+
+[hooks.pre-push.commands.checkov-validate]
+name = "Checkov strict validation"
+glob = "*.{tf,yml,yaml,json,dockerfile,Dockerfile}"
+run = '''
+#!/bin/bash
+set -e
+
+# TTY detection for VS Code compatibility
+if [ -t 1 ]; then
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -w /workspace \
+    ghcr.io/sheldonhull/preflight/checkov:latest \
+    checkov --directory /workspace --config-file /root/.checkov.yaml
+else
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -w /workspace \
+    ghcr.io/sheldonhull/preflight/checkov:latest \
+    checkov --directory /workspace --config-file /root/.checkov.yaml 2>/dev/null
+fi
+'''
+
+[hooks.pre-push.commands.trivy-full-scan]
+name = "Trivy comprehensive scan"
+run = '''
+#!/bin/bash
+set -e
+
+# TTY detection for VS Code compatibility
+if [ -t 1 ]; then
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -w /workspace \
+    ghcr.io/sheldonhull/preflight/trivy:latest \
+    trivy fs --config /root/.trivy.yaml .
+else
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -w /workspace \
+    ghcr.io/sheldonhull/preflight/trivy:latest \
+    trivy fs --config /root/.trivy.yaml . 2>/dev/null
+fi
+'''
+
+[hooks.pre-push.commands.trufflehog-validate]
+name = "Trufflehog strict validation"
+run = '''
+#!/bin/bash
+set -e
+
+# TTY detection for VS Code compatibility
+if [ -t 1 ]; then
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -v "$(pwd)/.git:/workspace/.git" \
+    -w /workspace \
+    ghcr.io/sheldonhull/preflight/trufflehog:latest \
+    trufflehog --regex --entropy=True --max_depth=50 \
+    --exclude_paths /root/.trufflehog.yaml \
+    /workspace
+else
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -v "$(pwd)/.git:/workspace/.git" \
+    -w /workspace \
+    ghcr.io/sheldonhull/preflight/trufflehog:latest \
+    trufflehog --regex --entropy=True --max_depth=50 \
+    --exclude_paths /root/.trufflehog.yaml \
+    /workspace 2>/dev/null
+fi
+'''

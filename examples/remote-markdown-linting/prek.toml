@@ -1,0 +1,40 @@
+# Example: Using Remote Markdown Linting Configuration with Prek
+#
+# This example shows how another repository would use the markdown
+# linting configuration from this repository.
+#
+# Simply copy this file to your repository's root as `prek.toml`,
+# update the url to point to your organization's fork,
+# and run `prek install`.
+
+[settings]
+# TTY detection for VS Code compatibility
+# When running in non-TTY mode, stderr is suppressed
+colors = "auto"
+verbose = false
+
+[settings.tty]
+detect = true
+suppress_stderr_when_no_tty = true
+quiet_when_no_tty = true
+
+[remotes.markdown]
+url = "https://github.com/sheldonhull/preflight"
+ref = "main"  # or use a specific version tag like v1.0.0
+config = "prek-markdown.toml"
+
+# That's it! The remote configuration will provide:
+#   - install hook: Pulls the Docker image
+#   - pre-commit hook: Auto-formats markdown files (and stages them!)
+#   - pre-push hook: Validates markdown files
+#
+# Key features:
+#   - Auto-stages fixed files (no extra manual step needed)
+#   - TTY detection for VS Code compatibility
+#   - Suppresses stderr in non-interactive mode
+#
+# You can add additional hooks below if needed:
+#
+# [hooks.pre-commit.commands.your-custom-command]
+# name = "Custom pre-commit check"
+# run = "echo 'Running custom check'"
