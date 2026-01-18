@@ -33,7 +33,8 @@ run = '''
 if [ -t 1 ]; then
   docker pull ghcr.io/sheldonhull/preflight/checkov:latest
 else
-  docker pull ghcr.io/sheldonhull/preflight/checkov:latest 2>/dev/null || true
+  # Suppress progress output but still fail on errors
+  docker pull ghcr.io/sheldonhull/preflight/checkov:latest >/dev/null 2>&1
 fi
 '''
 interactive = false
@@ -44,7 +45,8 @@ run = '''
 if [ -t 1 ]; then
   docker pull ghcr.io/sheldonhull/preflight/trivy:latest
 else
-  docker pull ghcr.io/sheldonhull/preflight/trivy:latest 2>/dev/null || true
+  # Suppress progress output but still fail on errors
+  docker pull ghcr.io/sheldonhull/preflight/trivy:latest >/dev/null 2>&1
 fi
 '''
 interactive = false
@@ -55,7 +57,8 @@ run = '''
 if [ -t 1 ]; then
   docker pull ghcr.io/sheldonhull/preflight/trufflehog:latest
 else
-  docker pull ghcr.io/sheldonhull/preflight/trufflehog:latest 2>/dev/null || true
+  # Suppress progress output but still fail on errors
+  docker pull ghcr.io/sheldonhull/preflight/trufflehog:latest >/dev/null 2>&1
 fi
 '''
 interactive = false
@@ -71,9 +74,10 @@ glob = "*.{tf,yml,yaml,json,dockerfile,Dockerfile}"
 skip = ["merge", "rebase"]
 run = '''
 #!/bin/bash
-set -e
 
-# TTY detection for VS Code compatibility
+STDERR_FILE=$(mktemp)
+trap "rm -f $STDERR_FILE" EXIT
+
 if [ -t 1 ]; then
   # Interactive mode - show full output
   docker run --rm \
@@ -82,12 +86,19 @@ if [ -t 1 ]; then
     ghcr.io/sheldonhull/preflight/checkov:latest \
     checkov --directory /workspace --config-file /root/.checkov.yaml
 else
-  # Non-interactive mode - suppress stderr for VS Code
+  # Non-interactive mode - capture stderr, show only on failure
   docker run --rm \
     -v "$(pwd):/workspace" \
     -w /workspace \
     ghcr.io/sheldonhull/preflight/checkov:latest \
-    checkov --directory /workspace --config-file /root/.checkov.yaml 2>/dev/null || exit 0
+    checkov --directory /workspace --config-file /root/.checkov.yaml 2>"$STDERR_FILE"
+  RESULT=$?
+
+  if [ $RESULT -ne 0 ] && [ -s "$STDERR_FILE" ]; then
+    cat "$STDERR_FILE" >&2
+  fi
+
+  exit $RESULT
 fi
 '''
 
@@ -96,9 +107,10 @@ name = "Trivy filesystem scan"
 skip = ["merge", "rebase"]
 run = '''
 #!/bin/bash
-set -e
 
-# TTY detection for VS Code compatibility
+STDERR_FILE=$(mktemp)
+trap "rm -f $STDERR_FILE" EXIT
+
 if [ -t 1 ]; then
   # Interactive mode - show full output
   docker run --rm \
@@ -107,12 +119,19 @@ if [ -t 1 ]; then
     ghcr.io/sheldonhull/preflight/trivy:latest \
     trivy fs --config /root/.trivy.yaml --exit-code 0 .
 else
-  # Non-interactive mode - suppress stderr for VS Code
+  # Non-interactive mode - capture stderr, show only on failure
   docker run --rm \
     -v "$(pwd):/workspace" \
     -w /workspace \
     ghcr.io/sheldonhull/preflight/trivy:latest \
-    trivy fs --config /root/.trivy.yaml --exit-code 0 . 2>/dev/null || exit 0
+    trivy fs --config /root/.trivy.yaml --exit-code 0 . 2>"$STDERR_FILE"
+  RESULT=$?
+
+  if [ $RESULT -ne 0 ] && [ -s "$STDERR_FILE" ]; then
+    cat "$STDERR_FILE" >&2
+  fi
+
+  exit $RESULT
 fi
 '''
 
@@ -121,9 +140,10 @@ name = "Trufflehog secrets scan"
 skip = ["merge", "rebase"]
 run = '''
 #!/bin/bash
-set -e
 
-# TTY detection for VS Code compatibility
+STDERR_FILE=$(mktemp)
+trap "rm -f $STDERR_FILE" EXIT
+
 if [ -t 1 ]; then
   # Interactive mode - show full output
   docker run --rm \
@@ -135,7 +155,7 @@ if [ -t 1 ]; then
     --exclude_paths /root/.trufflehog.yaml \
     /workspace
 else
-  # Non-interactive mode - suppress stderr for VS Code
+  # Non-interactive mode - capture stderr, show only on failure
   docker run --rm \
     -v "$(pwd):/workspace" \
     -v "$(pwd)/.git:/workspace/.git" \
@@ -143,7 +163,14 @@ else
     ghcr.io/sheldonhull/preflight/trufflehog:latest \
     trufflehog --regex --entropy=True --max_depth=50 \
     --exclude_paths /root/.trufflehog.yaml \
-    /workspace 2>/dev/null || exit 0
+    /workspace 2>"$STDERR_FILE"
+  RESULT=$?
+
+  if [ $RESULT -ne 0 ] && [ -s "$STDERR_FILE" ]; then
+    cat "$STDERR_FILE" >&2
+  fi
+
+  exit $RESULT
 fi
 '''
 
@@ -157,9 +184,10 @@ name = "Checkov strict validation"
 glob = "*.{tf,yml,yaml,json,dockerfile,Dockerfile}"
 run = '''
 #!/bin/bash
-set -e
 
-# TTY detection for VS Code compatibility
+STDERR_FILE=$(mktemp)
+trap "rm -f $STDERR_FILE" EXIT
+
 if [ -t 1 ]; then
   docker run --rm \
     -v "$(pwd):/workspace" \
@@ -171,7 +199,14 @@ else
     -v "$(pwd):/workspace" \
     -w /workspace \
     ghcr.io/sheldonhull/preflight/checkov:latest \
-    checkov --directory /workspace --config-file /root/.checkov.yaml 2>/dev/null
+    checkov --directory /workspace --config-file /root/.checkov.yaml 2>"$STDERR_FILE"
+  RESULT=$?
+
+  if [ $RESULT -ne 0 ] && [ -s "$STDERR_FILE" ]; then
+    cat "$STDERR_FILE" >&2
+  fi
+
+  exit $RESULT
 fi
 '''
 
@@ -179,9 +214,10 @@ fi
 name = "Trivy comprehensive scan"
 run = '''
 #!/bin/bash
-set -e
 
-# TTY detection for VS Code compatibility
+STDERR_FILE=$(mktemp)
+trap "rm -f $STDERR_FILE" EXIT
+
 if [ -t 1 ]; then
   docker run --rm \
     -v "$(pwd):/workspace" \
@@ -193,7 +229,14 @@ else
     -v "$(pwd):/workspace" \
     -w /workspace \
     ghcr.io/sheldonhull/preflight/trivy:latest \
-    trivy fs --config /root/.trivy.yaml . 2>/dev/null
+    trivy fs --config /root/.trivy.yaml . 2>"$STDERR_FILE"
+  RESULT=$?
+
+  if [ $RESULT -ne 0 ] && [ -s "$STDERR_FILE" ]; then
+    cat "$STDERR_FILE" >&2
+  fi
+
+  exit $RESULT
 fi
 '''
 
@@ -201,9 +244,10 @@ fi
 name = "Trufflehog strict validation"
 run = '''
 #!/bin/bash
-set -e
 
-# TTY detection for VS Code compatibility
+STDERR_FILE=$(mktemp)
+trap "rm -f $STDERR_FILE" EXIT
+
 if [ -t 1 ]; then
   docker run --rm \
     -v "$(pwd):/workspace" \
@@ -221,6 +265,13 @@ else
     ghcr.io/sheldonhull/preflight/trufflehog:latest \
     trufflehog --regex --entropy=True --max_depth=50 \
     --exclude_paths /root/.trufflehog.yaml \
-    /workspace 2>/dev/null
+    /workspace 2>"$STDERR_FILE"
+  RESULT=$?
+
+  if [ $RESULT -ne 0 ] && [ -s "$STDERR_FILE" ]; then
+    cat "$STDERR_FILE" >&2
+  fi
+
+  exit $RESULT
 fi
 '''
