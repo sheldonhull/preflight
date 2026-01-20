@@ -1,126 +1,116 @@
 # preflight
 
-Reusable Prek hooks and configurations to reduce copy-pasta across projects.
+Reusable Prek (pre-commit) hooks and configurations to reduce copy-pasta across projects.
 
-Prek is a Rust-based tool that improves the pre-commit experience with fast execution, TTY detection for VS Code compatibility, and automatic staging of fixed files.
+Prek is compatible with the standard pre-commit YAML format and provides fast execution with cross-platform support.
 
-## Remote Hook Configs
+## Quick Start
 
-This repository provides **remote prek configurations** that can be shared across multiple repositories without duplicating configuration files.
-
-### Available Configurations
-
-#### Markdown Linting with Docker
-
-Docker-based markdown linting with `markdownlint-cli2` and the `sentences-per-line` plugin.
-
-**Features:**
-
-- Containerized linting (consistent across all environments)
-- Auto-fixes markdown on commit
-- Validates markdown on push
-- Better Git diffs with sentences-per-line rule
-- Auto-stages fixed files (no extra manual step)
-- VS Code compatible (TTY detection, stderr suppression)
-
-**Quick Start:**
-
-Add this to your repository's `prek.toml`:
-
-```toml
-[settings]
-colors = "auto"
-verbose = false
-
-[settings.tty]
-detect = true
-suppress_stderr_when_no_tty = true
-quiet_when_no_tty = true
-
-[remotes.markdown]
-url = "https://github.com/sheldonhull/preflight"
-ref = "main"
-config = "prek-markdown.toml"
-```
-
-Then run:
+Copy `.pre-commit-config.yaml` to your repository and run:
 
 ```bash
 prek install
 ```
 
-Done! Your repository now has automatic markdown linting.
-
-**Documentation:**
-
-- [Full Documentation](./MARKDOWN_LINTING.md) - Complete setup and usage guide
-- [Quick Reference](./REMOTE_CONFIG_USAGE.md) - TL;DR for consumers
-- [Example Configuration](./examples/remote-markdown-linting/) - Sample setup
-
-#### Security Scanning with Docker
-
-Docker-based security scanning with Checkov, Trivy, and Trufflehog.
-
-**Features:**
-
-- Infrastructure as Code security scanning (Checkov)
-- Vulnerability and misconfiguration scanning (Trivy)
-- Secrets detection (Trufflehog)
-- All tools containerized
-- VS Code compatible
-
-**Quick Start:**
-
-Add this to your repository's `prek.toml`:
-
-```toml
-[settings]
-colors = "auto"
-verbose = false
-
-[settings.tty]
-detect = true
-suppress_stderr_when_no_tty = true
-quiet_when_no_tty = true
-
-[remotes.security]
-url = "https://github.com/sheldonhull/preflight"
-ref = "main"
-config = "prek-security.toml"
-```
-
-Then run:
+Or with standard pre-commit:
 
 ```bash
-prek install
+pre-commit install
 ```
 
-**Documentation:**
+## Features
 
-- [Full Documentation](./SECURITY_SCANNING.md) - Complete setup and usage guide
-- [Quick Start](./SECURITY_SCANNING_QUICKSTART.md) - Get started in 3 steps
-- [Example Configuration](./examples/remote-security-scanning/) - Sample setup
+- **Cross-platform**: Uses `docker_image` language type (works on Windows/Mac/Linux)
+- **VS Code compatible**: Output suppressed on success (`verbose: false` by default)
+- **Auto-staging**: Fixed files are automatically re-staged via PowerShell Core
+- **Staged hooks**: Pre-commit (fast), pre-push (thorough), manual (audit)
+
+## Hook Stages
+
+### Pre-commit (default)
+
+Fast checks that run on every commit:
+
+- `markdownlint` - Markdown linting with auto-fix
+- `restage-formatted` - Re-stage files fixed by formatters
+- `checkov` - Quick IaC security scan
+- `trufflehog-quick` - Quick secrets scan
+
+### Pre-push
+
+Thorough validation before pushing:
+
+- `checkov-full` - Full IaC security scan
+- `trufflehog-full` - Full secrets scan from base branch
+- `trivy-vulnerabilities` - Vulnerability scan
+- `trivy-config` - Config/misconfiguration scan
+- `markdownlint-check` - Markdown validation (no fix)
+
+### Manual
+
+Security audits (run with `prek run --hook-stage manual`):
+
+- `audit-secrets` - Secrets audit (last 10 commits)
+- `audit-checkov` - Full Checkov audit
+- `audit-vulnerabilities` - Full vulnerability audit
+- `audit-config` - Config misconfiguration audit
+
+### Init
+
+Pull Docker containers (run with `prek run --hook-stage manual -a init-`):
+
+- `init-markdown` - Pull markdown linting containers
+- `init-security` - Pull security scanning containers
+- `init-all` - Pull all containers
+
+## Usage
+
+```bash
+# Install git hooks
+prek install
+
+# Run all pre-commit hooks manually
+prek run --all-files
+
+# Run pre-push hooks
+prek run --hook-stage pre-push
+
+# Run manual audit hooks
+prek run --hook-stage manual
+
+# Pull all Docker images
+prek run --hook-stage manual -a init-all
+
+# Skip hooks for emergency commits
+PREK_SKIP=1 git commit -m "emergency fix"
+```
 
 ## What's Inside
 
-- **Docker-based markdown linting** - Consistent linting across all repos
-- **Docker-based security scanning** - Checkov, Trivy, and Trufflehog
-- **Remote configurations** - Share hooks without config duplication
-- **TTY detection** - VS Code compatibility with stderr suppression
+- **Docker-based markdown linting** - markdownlint-cli2
+- **Docker-based security scanning** - Checkov, Trivy, Trufflehog
+- **Cross-platform hooks** - PowerShell Core for git operations
+- **VS Code compatibility** - Proper output handling for IDE commits
 - **Auto-staging** - Fixed files are automatically staged
-- **Automated testing** - Verify your setup works
-- **CI/CD workflows** - Build and publish Docker images
-- **Fast Python installs** - Uses `uv` for package management
+
+## VS Code Compatibility
+
+This configuration includes special handling for VS Code's Git integration:
+
+- **Output suppression**: `verbose: false` (default) suppresses output on success
+- **Error-only output**: Errors are still shown when hooks fail
+- **Auto-staging**: Fixed files are automatically re-staged via PowerShell
+- **Skip hooks**: Set `PREK_SKIP=1` to bypass all hooks for emergency commits
 
 ## For Maintainers
 
-### Building the Docker Images
+### Building Custom Docker Images
 
 ```bash
-# Build markdown linting image
+# Build markdown linting image (optional - uses public images by default)
 ./build-markdownlint-image.sh
 
-# Build security scanner images
+# Build security scanner images (optional - uses public images by default)
 ./build-security-images.sh
 ```
 
@@ -134,22 +124,16 @@ prek install
 ./test-security-scanning.sh
 ```
 
-### Publishing to GHCR
+## Documentation
 
-The Docker images are automatically built and published via GitHub Actions on release.
-
-## VS Code Compatibility
-
-This configuration includes special handling for VS Code's Git integration:
-
-- **TTY Detection**: Detects when running in non-interactive mode
-- **Stderr Suppression**: Suppresses stderr output that causes VS Code to fail commits
-- **Auto-staging**: Fixed files are automatically staged so commits work without extra steps
-- **Skip Environment Variable**: Set `PREK_SKIP=1` to bypass all hooks
+- [Markdown Linting Guide](./MARKDOWN_LINTING.md)
+- [Security Scanning Guide](./SECURITY_SCANNING.md)
+- [Security Scanning Quick Start](./SECURITY_SCANNING_QUICKSTART.md)
+- [Remote Config Usage](./REMOTE_CONFIG_USAGE.md)
 
 ## Learn More
 
-- [Prek Documentation](https://github.com/prek-dev/prek)
+- [pre-commit](https://pre-commit.com/)
 - [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2)
 - [Checkov](https://www.checkov.io/)
 - [Trivy](https://aquasecurity.github.io/trivy/)

@@ -1,0 +1,191 @@
+# .pre-commit-config.yaml - Prek configuration for preflight
+# Migrated from lefthook/prek TOML to standard pre-commit YAML for better compatibility
+# Install: prek install
+# Run manually: prek run --all-files
+# Run pre-push hooks: prek run --hook-stage pre-push
+# Run manual hooks: prek run --hook-stage manual
+#
+# Cross-platform compatibility:
+# - Uses docker_image language for Docker-based hooks (works on Windows/Mac/Linux)
+# - Uses pwsh for git operations (PowerShell Core is cross-platform)
+# - Prek automatically suppresses output on success (verbose: false by default)
+default_stages: [pre-commit]
+repos:
+  # ============================================================================
+  # PRE-COMMIT STAGE: Formatting & Quick Checks
+  # Output suppressed on success for VS Code compatibility
+  # ============================================================================
+  - repo: local
+    hooks:
+      # Markdown linting with auto-fix
+      - id: markdownlint
+        name: Markdown Lint
+        language: docker_image
+        entry: davidanson/markdownlint-cli2:latest --fix "**/*.md" "#node_modules" "#vendor" "#.git" "#.terraform"
+        files: '\.md$'
+        exclude: '^(node_modules|vendor|\.git|\.terraform)/'
+        pass_filenames: false
+        priority: 10
+
+      # Re-stage files fixed by formatters (cross-platform with PowerShell)
+      # Note: Prek doesn't natively support auto-staging, so we handle it manually
+      - id: restage-formatted
+        name: Re-stage Formatted Files
+        language: system
+        entry: pwsh -NoProfile -Command "$files = git diff --name-only --diff-filter=M 2>$null; if ($files) { $files | ForEach-Object { git add $_ 2>$null } }; exit 0"
+        pass_filenames: false
+        always_run: true
+        priority: 15
+
+      # Checkov IaC scan (quick mode for commits)
+      - id: checkov
+        name: Checkov IaC Scan
+        language: docker_image
+        entry: bridgecrew/checkov:latest --directory /src --quiet --compact --skip-check CKV_DOCKER_2,CKV_DOCKER_3
+        files: '\.(tf|yml|yaml|json|dockerfile)$|Dockerfile'
+        pass_filenames: false
+        priority: 20
+
+      # Quick secret scan on staged changes (pre-commit security)
+      - id: trufflehog-quick
+        name: TruffleHog Quick Scan
+        language: docker_image
+        entry: trufflesecurity/trufflehog:latest git file:///src --since-commit HEAD --only-verified --fail --no-update
+        pass_filenames: false
+        always_run: true
+        priority: 30
+
+  # ============================================================================
+  # PRE-PUSH STAGE: Deep Security Scans
+  # ============================================================================
+  - repo: local
+    hooks:
+      # Full Checkov scan (all checks on push)
+      - id: checkov-full
+        name: Checkov Full Scan
+        language: docker_image
+        entry: bridgecrew/checkov:latest --directory /src --compact
+        files: '\.(tf|yml|yaml|json|dockerfile)$|Dockerfile'
+        pass_filenames: false
+        stages: [pre-push]
+        priority: 10
+
+      # Full secret scan from base branch
+      - id: trufflehog-full
+        name: TruffleHog Full Scan
+        language: docker_image
+        entry: trufflesecurity/trufflehog:latest git file:///src --since-commit origin/main --branch HEAD --only-verified --fail --no-update
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+        priority: 20
+
+      # Trivy filesystem vulnerability scan
+      - id: trivy-vulnerabilities
+        name: Trivy Vulnerability Scan
+        language: docker_image
+        entry: aquasec/trivy:latest fs /src --scanners vuln,secret --severity HIGH,CRITICAL --skip-dirs .git,node_modules,vendor,.terraform --exit-code 1
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+        priority: 30
+
+      # Trivy config/misconfiguration scan
+      - id: trivy-config
+        name: Trivy Config Scan
+        language: docker_image
+        entry: aquasec/trivy:latest config /src --severity MEDIUM,HIGH,CRITICAL --skip-dirs .git,node_modules,.terraform --exit-code 1
+        files: '\.(tf|yml|yaml|json|dockerfile)$|Dockerfile'
+        pass_filenames: false
+        stages: [pre-push]
+        priority: 40
+
+      # Markdown lint validation (no fix on push)
+      - id: markdownlint-check
+        name: Markdown Lint Check
+        language: docker_image
+        entry: davidanson/markdownlint-cli2:latest "**/*.md" "#node_modules" "#vendor" "#.git" "#.terraform"
+        files: '\.md$'
+        exclude: '^(node_modules|vendor|\.git|\.terraform)/'
+        pass_filenames: false
+        stages: [pre-push]
+        priority: 50
+
+  # ============================================================================
+  # MANUAL STAGE: Security Audits (run with: prek run --hook-stage manual)
+  # verbose: true ensures output is always shown for manual audits
+  # ============================================================================
+  - repo: local
+    hooks:
+      # Full security audit - secrets (last 10 commits)
+      - id: audit-secrets
+        name: Audit Secrets (last 10 commits)
+        language: docker_image
+        entry: trufflesecurity/trufflehog:latest git file:///src --since-commit HEAD~10
+        pass_filenames: false
+        stages: [manual]
+        verbose: true
+        priority: 10
+
+      # Full security audit - IaC misconfigurations
+      - id: audit-checkov
+        name: Audit Checkov (All Checks)
+        language: docker_image
+        entry: bridgecrew/checkov:latest --directory /src
+        pass_filenames: false
+        stages: [manual]
+        verbose: true
+        priority: 20
+
+      # Full security audit - vulnerabilities
+      - id: audit-vulnerabilities
+        name: Audit Vulnerabilities
+        language: docker_image
+        entry: aquasec/trivy:latest fs /src --scanners vuln,secret --skip-dirs .git,node_modules,vendor,.terraform
+        pass_filenames: false
+        stages: [manual]
+        verbose: true
+        priority: 30
+
+      # Full security audit - config/misconfig
+      - id: audit-config
+        name: Audit Config Misconfigurations
+        language: docker_image
+        entry: aquasec/trivy:latest config /src --skip-dirs .git,node_modules,.terraform
+        pass_filenames: false
+        stages: [manual]
+        verbose: true
+        priority: 40
+
+  # ============================================================================
+  # INIT STAGE: Pull Docker containers (run with: prek run --hook-stage manual -a init-)
+  # Uses PowerShell for cross-platform compatibility
+  # ============================================================================
+  - repo: local
+    hooks:
+      - id: init-markdown
+        name: Pull Markdown Containers
+        language: system
+        entry: pwsh -NoProfile -Command "docker pull -q davidanson/markdownlint-cli2:latest; Write-Host 'Markdown containers ready'"
+        pass_filenames: false
+        stages: [manual]
+        verbose: true
+        priority: 100
+
+      - id: init-security
+        name: Pull Security Containers
+        language: system
+        entry: pwsh -NoProfile -Command "docker pull -q bridgecrew/checkov:latest; docker pull -q trufflesecurity/trufflehog:latest; docker pull -q aquasec/trivy:latest; Write-Host 'Security containers ready'"
+        pass_filenames: false
+        stages: [manual]
+        verbose: true
+        priority: 101
+
+      - id: init-all
+        name: Pull All Containers
+        language: system
+        entry: pwsh -NoProfile -Command "Write-Host 'Pulling containers...'; docker pull -q davidanson/markdownlint-cli2:latest; docker pull -q bridgecrew/checkov:latest; docker pull -q trufflesecurity/trufflehog:latest; docker pull -q aquasec/trivy:latest; Write-Host 'All containers ready'"
+        pass_filenames: false
+        stages: [manual]
+        verbose: true
+        priority: 102
