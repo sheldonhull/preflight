@@ -1,6 +1,7 @@
-# Security Scanning with Lefthook
+# Security Scanning with Prek
 
-This repository provides containerized security scanning tools that can be consumed as remote Lefthook configurations. The setup includes three powerful security scanners:
+This repository provides containerized security scanning tools that can be consumed as remote Prek configurations.
+The setup includes three powerful security scanners:
 
 - **Checkov**: Infrastructure as Code (IaC) security scanner
 - **Trivy**: Comprehensive vulnerability and misconfiguration scanner
@@ -8,29 +9,39 @@ This repository provides containerized security scanning tools that can be consu
 
 ## Quick Start
 
-Add this to your repository's `lefthook.yml`:
+Add this to your repository's `prek.toml`:
 
-```yaml
-remotes:
-  - git_url: https://github.com/sheldonhull/preflight
-    ref: main  # or specific tag for stability
-    configs:
-      - lefthook-security.yml
+```toml
+[settings]
+colors = "auto"
+verbose = false
+
+[settings.tty]
+detect = true
+suppress_stderr_when_no_tty = true
+quiet_when_no_tty = true
+
+[remotes.security]
+url = "https://github.com/sheldonhull/preflight"
+ref = "main"  # or specific tag for stability
+config = "prek-security.toml"
 ```
 
 Then run:
 
 ```bash
-lefthook install
+prek install
 ```
 
 That's it! The security scanners will now run automatically:
+
 - **Pre-commit**: Scans staged files for security issues
 - **Pre-push**: Performs comprehensive security validation before pushing
 
 ## What Gets Scanned
 
 ### Checkov
+
 - Terraform files (`.tf`)
 - CloudFormation templates (`.yml`, `.yaml`, `.json`)
 - Dockerfiles
@@ -39,12 +50,14 @@ That's it! The security scanners will now run automatically:
 - Other IaC files
 
 Checkov checks for:
+
 - Security misconfigurations
 - Compliance violations
 - Best practice violations
 - Resource policies
 
 ### Trivy
+
 - Filesystem scanning for vulnerabilities
 - Configuration files
 - Infrastructure as Code
@@ -52,16 +65,19 @@ Checkov checks for:
 - Kubernetes manifests
 
 Trivy detects:
+
 - Known vulnerabilities (CVEs)
 - Misconfigurations
 - Security issues
 - Best practice violations
 
 ### Trufflehog
+
 - All files in the repository
 - Git history
 
 Trufflehog finds:
+
 - API keys
 - Passwords
 - Tokens
@@ -77,13 +93,13 @@ Trufflehog finds:
 ┌─────────────────────────────────────────────────────────────┐
 │ Your Repository                                              │
 │                                                              │
-│  lefthook.yml (3 lines)                                     │
+│  prek.toml (with remote config)                             │
 │      ↓                                                       │
 │  References remote config from sheldonhull/preflight        │
 └──────────────────────────────────────────────────────────────┘
                           ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ Remote Configuration (lefthook-security.yml)                │
+│ Remote Configuration (prek-security.toml)                   │
 │                                                              │
 │  Pre-commit Hooks:                                          │
 │    - Checkov scan (IaC files)                               │
@@ -97,19 +113,20 @@ Trufflehog finds:
 └──────────────────────────────────────────────────────────────┘
                           ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ Docker Containers (ghcr.io/sheldonhull/lefthook/*)         │
+│ Docker Containers (ghcr.io/sheldonhull/preflight/*)        │
 │                                                              │
 │  - checkov:latest                                           │
 │  - trivy:latest                                             │
 │  - trufflehog:latest                                        │
 │                                                              │
-│  Pulled automatically during `lefthook install`             │
+│  Pulled automatically during `prek install`                 │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 ### Workflow
 
 1. **Developer commits code**
+
    ```bash
    git add .
    git commit -m "Add new feature"
@@ -122,10 +139,11 @@ Trufflehog finds:
 
 3. **If issues found**
    - Commit is blocked
-   - Issues are displayed in terminal
+   - Issues are displayed in terminal (if TTY available)
    - Developer fixes issues and retries
 
 4. **Developer pushes code**
+
    ```bash
    git push
    ```
@@ -144,12 +162,14 @@ The scanners come with sensible defaults:
 - **Skip common directories**: `.git`, `node_modules`, `.terraform`, `vendor`, etc.
 - **Report critical and high severity issues**
 - **Fail on security findings** (configurable)
+- **VS Code compatible**: TTY detection and stderr suppression
 
 ### Customizing for Your Repository
 
 Create local configuration files to override defaults:
 
 #### `.checkov.yaml` (optional)
+
 ```yaml
 # Add your repository-specific Checkov settings
 skip-check:
@@ -162,6 +182,7 @@ framework:
 ```
 
 #### `.trivy.yaml` (optional)
+
 ```yaml
 # Add your repository-specific Trivy settings
 severity:
@@ -174,6 +195,7 @@ scan:
 ```
 
 #### `.trufflehog.yaml` (optional)
+
 ```yaml
 # Add your repository-specific Trufflehog settings
 exclude_patterns:
@@ -186,22 +208,25 @@ entropy:
 
 ### Disabling Specific Scanners
 
-If you only want some scanners, create your own `lefthook.yml`:
+If you only want some scanners, create your own `prek.toml`:
 
-```yaml
+```toml
 # Use only Checkov and Trivy (skip Trufflehog)
-remotes:
-  - git_url: https://github.com/sheldonhull/preflight
-    ref: main
+[settings]
+colors = "auto"
 
-pre-commit:
-  commands:
-    checkov-scan:
-      glob: "*.{tf,yml,yaml,json,dockerfile,Dockerfile}"
-      run: docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/sheldonhull/lefthook/checkov:latest checkov --directory /workspace
+[settings.tty]
+detect = true
+suppress_stderr_when_no_tty = true
 
-    trivy-fs-scan:
-      run: docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/sheldonhull/lefthook/trivy:latest trivy fs --exit-code 0 .
+[hooks.pre-commit.commands.checkov-scan]
+name = "Checkov IaC scan"
+glob = "*.{tf,yml,yaml,json,dockerfile,Dockerfile}"
+run = "docker run --rm -v \"$(pwd):/workspace\" -w /workspace ghcr.io/sheldonhull/preflight/checkov:latest checkov --directory /workspace"
+
+[hooks.pre-commit.commands.trivy-fs-scan]
+name = "Trivy filesystem scan"
+run = "docker run --rm -v \"$(pwd):/workspace\" -w /workspace ghcr.io/sheldonhull/preflight/trivy:latest trivy fs --exit-code 0 ."
 ```
 
 ## Skipping Hooks
@@ -209,18 +234,15 @@ pre-commit:
 Sometimes you need to skip security checks:
 
 ### Skip all hooks for one commit
+
 ```bash
 git commit --no-verify -m "Emergency hotfix"
 ```
 
 ### Skip all hooks temporarily
-```bash
-LEFTHOOK=0 git commit -m "Skip hooks"
-```
 
-### Skip specific hook
 ```bash
-LEFTHOOK_EXCLUDE=checkov-scan git commit -m "Skip only Checkov"
+PREK_SKIP=1 git commit -m "Skip hooks"
 ```
 
 ## CI/CD Integration
@@ -242,40 +264,42 @@ jobs:
       - name: Run Checkov
         run: |
           docker run --rm -v "$PWD:/workspace" -w /workspace \
-            ghcr.io/sheldonhull/lefthook/checkov:latest \
+            ghcr.io/sheldonhull/preflight/checkov:latest \
             checkov --directory /workspace
 
       - name: Run Trivy
         run: |
           docker run --rm -v "$PWD:/workspace" -w /workspace \
-            ghcr.io/sheldonhull/lefthook/trivy:latest \
+            ghcr.io/sheldonhull/preflight/trivy:latest \
             trivy fs .
 
       - name: Run Trufflehog
         run: |
           docker run --rm -v "$PWD:/workspace" -v "$PWD/.git:/workspace/.git" \
             -w /workspace \
-            ghcr.io/sheldonhull/lefthook/trufflehog:latest \
+            ghcr.io/sheldonhull/preflight/trufflehog:latest \
             trufflehog --regex --entropy=True /workspace
 ```
 
 ## Troubleshooting
 
 ### Docker image not found
+
 ```bash
 # Manually pull the images
-docker pull ghcr.io/sheldonhull/lefthook/checkov:latest
-docker pull ghcr.io/sheldonhull/lefthook/trivy:latest
-docker pull ghcr.io/sheldonhull/lefthook/trufflehog:latest
+docker pull ghcr.io/sheldonhull/preflight/checkov:latest
+docker pull ghcr.io/sheldonhull/preflight/trivy:latest
+docker pull ghcr.io/sheldonhull/preflight/trufflehog:latest
 ```
 
 ### Hooks not running
+
 ```bash
 # Reinstall hooks
-lefthook install
+prek install
 
 # Check configuration
-lefthook run --help
+prek --help
 ```
 
 ### Too many false positives
@@ -297,28 +321,36 @@ For large repositories, you may want to:
 2. Use `.dockerignore` to exclude unnecessary files
 3. Run scanners only on pre-push (not pre-commit)
 
-```yaml
-# lefthook.yml - Only run on pre-push
-remotes:
-  - git_url: https://github.com/sheldonhull/preflight
-    ref: main
+```toml
+# prek.toml - Only run on pre-push
+[settings]
+colors = "auto"
 
-pre-commit:
-  skip: true  # Skip security scans on pre-commit
+[hooks.pre-commit]
+skip = true  # Skip security scans on pre-commit
 
-pre-push:
-  commands:
-    security-scan:
-      run: ./run-security-scans.sh
+[remotes.security]
+url = "https://github.com/sheldonhull/preflight"
+ref = "main"
+config = "prek-security.toml"
 ```
+
+### VS Code commits failing
+
+This configuration includes special handling for VS Code:
+
+- TTY detection suppresses stderr in non-interactive mode
+- Set `PREK_SKIP=1` environment variable to bypass hooks entirely
 
 ## Security Best Practices
 
 1. **Pin versions**: Use specific tags instead of `latest` for production
-   ```yaml
-   remotes:
-     - git_url: https://github.com/sheldonhull/preflight
-       ref: v1.0.0  # Use specific version
+
+   ```toml
+   [remotes.security]
+   url = "https://github.com/sheldonhull/preflight"
+   ref = "v1.0.0"  # Use specific version
+   config = "prek-security.toml"
    ```
 
 2. **Review findings**: Don't blindly suppress security warnings
@@ -328,7 +360,7 @@ pre-push:
 
 ## Examples
 
-See the `examples/security-scanning/` directory for complete working examples of consuming repositories.
+See the `examples/remote-security-scanning/` directory for complete working examples of consuming repositories.
 
 ## Testing
 
@@ -342,9 +374,9 @@ Test the scanners locally:
 ./build-security-images.sh
 
 # Test specific scanner
-docker run --rm ghcr.io/sheldonhull/lefthook/checkov:latest checkov --version
-docker run --rm ghcr.io/sheldonhull/lefthook/trivy:latest trivy --version
-docker run --rm ghcr.io/sheldonhull/lefthook/trufflehog:latest trufflehog --help
+docker run --rm ghcr.io/sheldonhull/preflight/checkov:latest checkov --version
+docker run --rm ghcr.io/sheldonhull/preflight/trivy:latest trivy --version
+docker run --rm ghcr.io/sheldonhull/preflight/trufflehog:latest trufflehog --help
 ```
 
 ## Support
@@ -359,4 +391,10 @@ docker run --rm ghcr.io/sheldonhull/lefthook/trufflehog:latest trufflehog --help
 - **Trivy**: 0.55.2
 - **Trufflehog**: 2.2.1
 
-These versions are pinned in the Dockerfiles for reproducibility. Updates will be released as new versions of this repository.
+These versions are pinned in the Dockerfiles for reproducibility.
+Updates will be released as new versions of this repository.
+
+## Python Package Management
+
+The Dockerfiles use `uv` for fast Python package installation instead of pip.
+This significantly speeds up image builds while maintaining compatibility.

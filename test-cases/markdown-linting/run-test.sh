@@ -13,7 +13,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-IMAGE_NAME="${IMAGE_NAME:-lefthook/markdownlint-cli2:latest}"
+IMAGE_NAME="${IMAGE_NAME:-preflight/markdownlint-cli2:latest}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "========================================="
@@ -194,10 +194,10 @@ echo ""
 echo "Formatted output saved to: test-output.md"
 echo ""
 echo "Key findings:"
-echo "  • Sentences are correctly split onto separate lines"
-echo "  • Tables remain intact and properly formatted"
-echo "  • Code blocks are preserved exactly"
-echo "  • Inline code is not modified"
+echo "  - Sentences are correctly split onto separate lines"
+echo "  - Tables remain intact and properly formatted"
+echo "  - Code blocks are preserved exactly"
+echo "  - Inline code is not modified"
 echo ""
 echo "The markdown linting configuration is working correctly!"
 echo ""

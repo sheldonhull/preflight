@@ -4,14 +4,14 @@
 
 set -e
 
-IMAGE_NAME="${IMAGE_NAME:-lefthook/markdownlint-cli2}"
+IMAGE_NAME="${IMAGE_NAME:-preflight/markdownlint-cli2}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
 echo "Building markdownlint Docker image..."
 docker build -f Dockerfile.markdownlint -t "${IMAGE_NAME}:${IMAGE_TAG}" .
 
 echo ""
-echo "✓ Image built successfully: ${IMAGE_NAME}:${IMAGE_TAG}"
+echo "Image built successfully: ${IMAGE_NAME}:${IMAGE_TAG}"
 echo ""
 echo "To test the image:"
 echo "  docker run --rm ${IMAGE_NAME}:${IMAGE_TAG} markdownlint-cli2 --version"

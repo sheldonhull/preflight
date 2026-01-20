@@ -24,7 +24,8 @@ These test files contain **intentionally insecure** configurations and **fake cr
 
 ## Important Notes
 
-⚠️ **WARNING**: All credentials and secrets in these test files are **FAKE** and for testing purposes only. They are not real credentials and will not provide access to any systems.
+WARNING: All credentials and secrets in these test files are **FAKE** and for testing purposes only.
+They are not real credentials and will not provide access to any systems.
 
 ## Usage
 
@@ -39,17 +40,17 @@ Or test individual scanners:
 ```bash
 # Test Checkov
 docker run --rm -v "$(pwd)/test-cases/security-scanning/checkov:/workspace" \
-  -w /workspace ghcr.io/sheldonhull/lefthook/checkov:latest \
+  -w /workspace ghcr.io/sheldonhull/preflight/checkov:latest \
   checkov --directory /workspace
 
 # Test Trivy
 docker run --rm -v "$(pwd)/test-cases/security-scanning/trivy:/workspace" \
-  -w /workspace ghcr.io/sheldonhull/lefthook/trivy:latest \
+  -w /workspace ghcr.io/sheldonhull/preflight/trivy:latest \
   trivy config /workspace
 
 # Test Trufflehog
 docker run --rm -v "$(pwd)/test-cases/security-scanning/trufflehog:/workspace" \
-  -w /workspace ghcr.io/sheldonhull/lefthook/trufflehog:latest \
+  -w /workspace ghcr.io/sheldonhull/preflight/trufflehog:latest \
   trufflehog --regex --entropy=True /workspace
 ```
 
@@ -60,3 +61,12 @@ docker run --rm -v "$(pwd)/test-cases/security-scanning/trufflehog:/workspace" \
 - **Trufflehog**: Should detect fake secrets in the secrets.example file
 
 If a scanner does **not** detect issues in these files, there may be a configuration problem.
+
+## VS Code Compatibility
+
+When running prek hooks from VS Code (non-interactive mode):
+
+- Stderr is suppressed to prevent VS Code from treating hook output as errors
+- Security scanners run in parallel for better performance
+- Hooks are skipped during merge/rebase operations
+- Set `PREK_SKIP=1` to bypass hooks if needed

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Test script for markdown linting setup
-# This simulates what the lefthook hooks would do
+# This simulates what the prek hooks would do
 
 set -e
 
@@ -9,7 +9,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-IMAGE_NAME="lefthook/markdownlint-cli2:latest"
+IMAGE_NAME="preflight/markdownlint-cli2:latest"
 
 echo "========================================="
 echo "Testing Markdown Linting Setup"
@@ -41,7 +41,7 @@ fi
 # Check if configuration files exist
 echo ""
 echo "Checking configuration files..."
-for file in ".markdownlint-cli2.yaml" ".markdownlint.yaml" "lefthook-markdown.yml" "Dockerfile.markdownlint"; do
+for file in ".markdownlint-cli2.yaml" ".markdownlint.yaml" "prek-markdown.toml" "Dockerfile.markdownlint"; do
     if [ -f "$file" ]; then
         echo -e "${GREEN}✓ $file exists${NC}"
     else
@@ -96,6 +96,12 @@ echo "Fixed content:"
 cat /tmp/test-lint.md
 echo ""
 
+# Test auto-staging of fixed files (simulated)
+echo ""
+echo "Testing auto-staging simulation..."
+echo "In a real git repository, prek would automatically stage modified files."
+echo "This is controlled by the 'stage_fixed = true' setting in prek-markdown.toml"
+
 # Test linting on real repository files
 echo ""
 echo "Testing on repository markdown files..."
@@ -116,41 +122,56 @@ else
         echo -e "${GREEN}✓ All repository markdown files pass linting${NC}"
     else
         echo -e "${YELLOW}! Some repository markdown files have linting issues${NC}"
-        echo "  This is normal - you can fix them with: lefthook run pre-commit"
+        echo "  This is normal - you can fix them with: prek run pre-commit"
     fi
 fi
 
-# Test lefthook configuration
+# Test TTY detection
 echo ""
 echo "========================================="
-echo "Testing Lefthook Configuration"
+echo "Testing TTY Detection (VS Code compatibility)"
 echo "========================================="
 echo ""
 
-if ! command -v lefthook &> /dev/null; then
-    echo -e "${YELLOW}! Lefthook is not installed${NC}"
-    echo "To test the full setup, install lefthook:"
-    echo "  brew install lefthook"
-    echo "  or: go install github.com/evilmartians/lefthook@latest"
+echo "Current TTY status:"
+if [ -t 1 ]; then
+    echo -e "${GREEN}✓ Running in interactive mode (TTY detected)${NC}"
 else
-    echo -e "${GREEN}✓ Lefthook is available${NC}"
+    echo -e "${YELLOW}! Running in non-interactive mode (no TTY)${NC}"
+    echo "  Prek will suppress stderr output to prevent VS Code issues"
+fi
+
+# Test prek configuration
+echo ""
+echo "========================================="
+echo "Testing Prek Configuration"
+echo "========================================="
+echo ""
+
+if ! command -v prek &> /dev/null; then
+    echo -e "${YELLOW}! Prek is not installed${NC}"
+    echo "To test the full setup, install prek:"
+    echo "  cargo install prek"
+    echo "  or: brew install prek"
+else
+    echo -e "${GREEN}✓ Prek is available${NC}"
 
     echo ""
-    echo "Testing lefthook configuration syntax..."
-    if lefthook run --help > /dev/null 2>&1; then
-        echo -e "${GREEN}✓ Lefthook is working${NC}"
+    echo "Testing prek configuration syntax..."
+    if prek --help > /dev/null 2>&1; then
+        echo -e "${GREEN}✓ Prek is working${NC}"
     else
-        echo -e "${RED}✗ Lefthook test failed${NC}"
+        echo -e "${RED}✗ Prek test failed${NC}"
     fi
 
-    # Only test runs if lefthook.yml exists
-    if [ -f "lefthook.yml" ]; then
+    # Only test runs if prek.toml exists
+    if [ -f "prek.toml" ]; then
         echo ""
         echo "You can test the hooks manually with:"
-        echo "  lefthook install          # Install hooks"
-        echo "  lefthook run install      # Pull Docker image"
-        echo "  lefthook run pre-commit   # Test formatting"
-        echo "  lefthook run pre-push     # Test validation"
+        echo "  prek install          # Install hooks"
+        echo "  prek run install      # Pull Docker image"
+        echo "  prek run pre-commit   # Test formatting (auto-stages fixed files)"
+        echo "  prek run pre-push     # Test validation"
     fi
 fi
 
@@ -162,6 +183,11 @@ echo ""
 echo "Next steps:"
 echo "1. Review the configuration files"
 echo "2. Build and publish the Docker image to a registry"
-echo "3. Update lefthook-markdown.yml with your registry URL"
+echo "3. Update prek-markdown.toml with your registry URL"
 echo "4. Test in another repository with the remote config"
+echo ""
+echo "Key features of the prek configuration:"
+echo "  - Auto-stages fixed files (no extra manual step needed)"
+echo "  - TTY detection for VS Code compatibility"
+echo "  - Suppresses stderr in non-interactive mode"
 echo ""

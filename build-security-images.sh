@@ -5,7 +5,7 @@
 set -e
 
 # Default image registry
-REGISTRY="${REGISTRY:-ghcr.io/sheldonhull/lefthook}"
+REGISTRY="${REGISTRY:-ghcr.io/sheldonhull/preflight}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
 # Function to build a single image
@@ -18,7 +18,7 @@ build_image() {
     docker build -f "${dockerfile}" -t "${image_name}" .
 
     echo ""
-    echo "✓ Image built successfully: ${image_name}"
+    echo "Image built successfully: ${image_name}"
     echo ""
     echo "To test the image:"
     echo "  docker run --rm ${image_name} ${tool} --version"

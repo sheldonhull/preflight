@@ -1,0 +1,130 @@
+# Remote Prek Configuration for Markdown Linting
+#
+# This configuration provides Docker-based markdown linting with markdownlint-cli2
+# and the sentences-per-line custom plugin.
+#
+# Usage in other repositories:
+#   Add to your prek.toml:
+#
+#   [remotes.markdown]
+#   url = "https://github.com/sheldonhull/preflight"
+#   ref = "main"
+#   config = "prek-markdown.toml"
+#
+# The Docker image will be automatically pulled during prek install.
+
+[settings]
+# Auto-stage files modified by formatters
+# This ensures VS Code and other tools don't require an extra manual staging step
+stage_fixed = true
+
+# TTY detection for VS Code compatibility
+[settings.tty]
+detect = true
+suppress_stderr_when_no_tty = true
+quiet_when_no_tty = true
+
+# Install hook - pulls the Docker image so it's ready when hooks run
+[hooks.install]
+name = "Install Markdown Linting Image"
+parallel = true
+
+[hooks.install.commands.pull-markdownlint-image]
+name = "Pull markdownlint Docker image"
+run = '''
+if [ -t 1 ]; then
+  docker pull preflight/markdownlint-cli2:latest
+else
+  # Suppress progress output but still fail on errors
+  docker pull preflight/markdownlint-cli2:latest >/dev/null 2>&1
+fi
+'''
+interactive = false
+
+# Pre-commit hook - automatically fix markdown issues and stage the changes
+[hooks.pre-commit]
+name = "Markdown Formatting"
+parallel = false
+
+[hooks.pre-commit.commands.markdownlint-fmt]
+name = "Format markdown files"
+glob = "*.{md,markdown}"
+# Stage fixed files automatically so VS Code commits work without extra steps
+stage_fixed = true
+run = '''
+#!/bin/bash
+set -e
+
+STDERR_FILE=$(mktemp)
+trap "rm -f $STDERR_FILE" EXIT
+
+# Run the formatter
+if [ -t 1 ]; then
+  # Interactive mode - show full output
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -w /workspace \
+    preflight/markdownlint-cli2:latest \
+    markdownlint-cli2 --fix "**/*.{md,markdown}" "#node_modules" "#vendor" "#.git"
+  RESULT=$?
+else
+  # Non-interactive mode (VS Code) - capture stderr, show only on failure
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -w /workspace \
+    preflight/markdownlint-cli2:latest \
+    markdownlint-cli2 --fix "**/*.{md,markdown}" "#node_modules" "#vendor" "#.git" 2>"$STDERR_FILE"
+  RESULT=$?
+
+  # If the command failed, output the captured stderr
+  if [ $RESULT -ne 0 ] && [ -s "$STDERR_FILE" ]; then
+    cat "$STDERR_FILE" >&2
+  fi
+fi
+
+# Auto-stage any modified markdown files (regardless of linter result)
+git diff --name-only --diff-filter=M -- '*.md' '*.markdown' 2>/dev/null | xargs -r git add
+
+# Exit with the linter's result
+exit $RESULT
+'''
+
+# Pre-push hook - validate markdown (no auto-fix)
+[hooks.pre-push]
+name = "Markdown Validation"
+parallel = false
+
+[hooks.pre-push.commands.markdownlint-check]
+name = "Validate markdown files"
+glob = "*.{md,markdown}"
+run = '''
+#!/bin/bash
+set -e
+
+STDERR_FILE=$(mktemp)
+trap "rm -f $STDERR_FILE" EXIT
+
+if [ -t 1 ]; then
+  # Interactive mode - show full output
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -w /workspace \
+    preflight/markdownlint-cli2:latest \
+    markdownlint-cli2 "**/*.{md,markdown}" "#node_modules" "#vendor" "#.git"
+else
+  # Non-interactive mode - capture stderr, show only on failure
+  docker run --rm \
+    -v "$(pwd):/workspace" \
+    -w /workspace \
+    preflight/markdownlint-cli2:latest \
+    markdownlint-cli2 "**/*.{md,markdown}" "#node_modules" "#vendor" "#.git" 2>"$STDERR_FILE"
+  RESULT=$?
+
+  # If the command failed, output the captured stderr
+  if [ $RESULT -ne 0 ] && [ -s "$STDERR_FILE" ]; then
+    cat "$STDERR_FILE" >&2
+  fi
+
+  exit $RESULT
+fi
+'''

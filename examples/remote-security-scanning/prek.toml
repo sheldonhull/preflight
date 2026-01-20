@@ -1,0 +1,33 @@
+# Example prek.toml for consuming the remote security scanning configuration
+# This is all you need in your repository to enable security scanning!
+
+[settings]
+# TTY detection for VS Code compatibility
+# When running in non-TTY mode, stderr is suppressed
+colors = "auto"
+verbose = false
+
+[settings.tty]
+detect = true
+suppress_stderr_when_no_tty = true
+quiet_when_no_tty = true
+
+[remotes.security]
+url = "https://github.com/sheldonhull/preflight"
+ref = "main"  # or use a specific tag for stability (recommended for production)
+config = "prek-security.toml"
+
+# Key features:
+#   - TTY detection for VS Code compatibility
+#   - Suppresses stderr in non-interactive mode
+#   - Parallel execution of security scanners
+#   - Skip hooks during merge/rebase operations
+
+# Optional: Add your own custom hooks here
+# [hooks.pre-commit.commands.your-custom-check]
+# name = "Custom check"
+# run = "echo 'Running custom checks...'"
+
+# Optional: Override specific scanner behavior
+# [hooks.pre-commit.commands.checkov-scan]
+# skip = true  # Disable Checkov if not needed

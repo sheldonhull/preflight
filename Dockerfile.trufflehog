@@ -6,8 +6,12 @@ FROM python:3.11-alpine
 # Install git (required for Trufflehog to work)
 RUN apk add --no-cache git
 
-# Install trufflehog with pinned version for reproducibility
-RUN pip install --no-cache-dir truffleHog==2.2.1
+# Install uv for fast Python package management
+# https://github.com/astral-sh/uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Install trufflehog with pinned version for reproducibility using uv
+RUN uv pip install --system --no-cache truffleHog==2.2.1
 
 # Copy default configuration to container
 COPY .trufflehog.yaml /root/.trufflehog.yaml

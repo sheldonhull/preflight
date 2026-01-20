@@ -3,8 +3,12 @@
 
 FROM python:3.11-alpine
 
-# Install checkov with pinned version for reproducibility
-RUN pip install --no-cache-dir checkov==3.2.9
+# Install uv for fast Python package management
+# https://github.com/astral-sh/uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Install checkov with pinned version for reproducibility using uv
+RUN uv pip install --system --no-cache checkov==3.2.9
 
 # Copy default configuration to container
 COPY .checkov.yaml /root/.checkov.yaml
